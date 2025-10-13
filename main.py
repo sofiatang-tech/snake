@@ -1,27 +1,45 @@
-# === BATTLE-SNAKE ADVANCED VERSION ===
-# Deploy this to your Dev URL (e.g. Replit, Render, or local tunnel)
+# === LAVENDER BATTLESNAKE: Sssugarplum Edition ===
+# Author: Sofia Tang
+# Battlesnake Profile: https://play.battlesnake.com
 # Docs: https://docs.battlesnake.com/quickstart
 
 from flask import Flask, request, jsonify
+import os
 import math
 
 app = Flask(__name__)
 
+# -----------------------------------------------
+# Root endpoint — tells Battlesnake your style
+# -----------------------------------------------
 @app.get("/")
 def index():
-    return "Your advanced Battlesnake is running!", 200
+    return jsonify({
+        "apiversion": "1",
+        "author": "sofiatang1",
+        "color": "#C8A2C8",        # Lavender theme 💜
+        "head": "fang",            # Elegant fang head
+        "tail": "round-bum"        # Rounded tail for charm
+    })
 
+
+# -----------------------------------------------
+# Start endpoint — called when a game begins
+# -----------------------------------------------
 @app.post("/start")
 def start():
     data = request.get_json()
     print("GAME START:", data["game"]["id"])
-    color = "#00CED1"  # Teal
     return jsonify({
-        "color": color,
-        "headType": "beluga",
+        "color": "#C8A2C8",
+        "headType": "fang",
         "tailType": "round-bum"
     })
 
+
+# -----------------------------------------------
+# Move endpoint — core logic of your snake
+# -----------------------------------------------
 @app.post("/move")
 def move():
     data = request.get_json()
@@ -30,6 +48,9 @@ def move():
     return jsonify({"move": move})
 
 
+# -----------------------------------------------
+# End endpoint — called when game ends
+# -----------------------------------------------
 @app.post("/end")
 def end():
     data = request.get_json()
@@ -37,8 +58,9 @@ def end():
     return "ok", 200
 
 
-# === STRATEGY FUNCTIONS ===
-
+# -----------------------------------------------
+# STRATEGY FUNCTIONS
+# -----------------------------------------------
 def choose_best_move(data):
     board = data["board"]
     me = data["you"]
@@ -50,7 +72,6 @@ def choose_best_move(data):
     food = board["food"]
     snakes = board["snakes"]
 
-    # Directions
     moves = {
         "up": {"x": head["x"], "y": head["y"] + 1},
         "down": {"x": head["x"], "y": head["y"] - 1},
@@ -63,37 +84,27 @@ def choose_best_move(data):
         if is_safe(coord, body, snakes, width, height, me):
             safe_moves.append(move)
 
-    # If no safe moves, choose randomly
     if not safe_moves:
         return "up"
 
-    # Food logic: choose nearest safe food if any
     if food:
         target = nearest_food(head, food)
         best_move = move_toward(head, target, safe_moves)
         if best_move:
             return best_move
 
-    # Otherwise choose the safest (most open) move
     best_move = max(safe_moves, key=lambda m: open_space_score(moves[m], snakes, width, height))
     return best_move
 
 
 def is_safe(coord, body, snakes, width, height, me):
-    # Stay in bounds
     if coord["x"] < 0 or coord["x"] >= width or coord["y"] < 0 or coord["y"] >= height:
         return False
-
-    # Avoid own body (excluding tail end if it moves)
     if coord in body[:-1]:
         return False
-
-    # Avoid other snakes’ bodies
     for s in snakes:
         if coord in s["body"][:-1]:
             return False
-
-    # Avoid heads of larger or equal snakes nearby (prevent head-on collisions)
     for s in snakes:
         if s["id"] == me["id"]:
             continue
@@ -111,8 +122,8 @@ def nearest_food(head, food_list):
 def move_toward(head, target, safe_moves):
     dx = target["x"] - head["x"]
     dy = target["y"] - head["y"]
-
     preferred = []
+
     if abs(dx) > abs(dy):
         if dx > 0:
             preferred = ["right", "up", "down", "left"]
@@ -131,7 +142,6 @@ def move_toward(head, target, safe_moves):
 
 
 def open_space_score(coord, snakes, width, height):
-    # Simple open-space heuristic: count available cells within Manhattan radius 2
     score = 0
     for x in range(coord["x"] - 2, coord["x"] + 3):
         for y in range(coord["y"] - 2, coord["y"] + 3):
@@ -145,9 +155,9 @@ def manhattan(a, b):
     return abs(a["x"] - b["x"]) + abs(a["y"] - b["y"])
 
 
-# === Run on Render or locally ===
-import os
-
+# -----------------------------------------------
+# Run on Render or locally
+# -----------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     app.run(host="0.0.0.0", port=port)
